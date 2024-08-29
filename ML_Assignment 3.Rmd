@@ -1,0 +1,102 @@
+---
+title: "LDA & QDA"
+author: SRI
+date: "2024-08-19"
+output: html_document
+---
+```{r}
+library(MASS)
+library(class)
+```
+
+
+
+```{r}
+library(ISLR)
+?Auto
+data(Auto)
+median(Auto$mpg)
+mpg01 <- (Auto$mpg > median(Auto$mpg))*1
+str(mpg01)
+head(Auto$mpg, 30)
+head(mpg01, 30)
+```  
+
+```{r}
+
+AutoData <- data.frame(a = rnorm(100), b = rnorm(100), c = rnorm(100))
+cor(AutoData[, -10])
+AutoData$name <- NULL
+head(AutoData)
+
+pairs(~mpg01 + cylinders + displacement + horsepower + weight, 
+      data = Auto, 
+      col = c("yellow", "cornflowerblue", "pink", "cyan"))
+par(mfrow = c(2,2))
+plot(Auto$cylinders, mpg01, col = "red", xlab = "cylinders", main = "cylinders vs. mpg01")
+plot(Auto$displacement, mpg01, col = "red", xlab = "displacement", main = "displacement vs. mpg01")
+plot(Auto$horsepower, mpg01, col = "red", xlab = "horsepower", main = "horsepower vs. mpg01")
+plot(Auto$weight, mpg01, col = "red", xlab = "weight", main = "weight vs. mpg01")
+
+
+```
+                 
+                       
+```{r}
+library(caret)
+Auto$mpg01 <- ifelse(Auto$mpg > median(Auto$mpg), 1, 0)
+Auto$mpg01 <- as.factor(Auto$mpg01) 
+table(Auto$mpg01)
+set.seed(999)
+inTraining <- createDataPartition(Auto$mpg01, p = 0.7, list = FALSE)
+
+training <- Auto[inTraining, ]
+testing  <- Auto[-inTraining, ]
+
+dim(training)
+dim(testing)
+```
+                    
+```{r}
+lda_m1 <- lda(mpg01 ~ cylinders + displacement + horsepower+ weight, data = training)
+
+lda.pred <- predict(lda_m1, testing)$class
+
+table(lda.pred, testing$mpg01)
+error_lda <- mean(lda.pred != testing$mpg01)
+error_lda
+```
+                    
+```{r}
+qda_m1 <- qda(mpg01 ~ cylinders + displacement + horsepower + weight, data = training)
+qda.pred <- predict(qda_m1, testing)$class
+
+table(qda.pred, testing$mpg01)
+error_qda <- mean(qda.pred != testing$mpg01)
+error_qda
+```
+```{r}
+logisticR_m1 <-glm(mpg01 ~ cylinders + displacement + horsepower + weight, data = training, family = binomial)
+
+logisticR.prob <- predict(logisticR_m1, testing, type = "response")
+
+logisticR.pred <- ifelse(logisticR.prob > 0.5, 1, 0)
+
+table(logisticR.pred, testing$mpg01)
+error_glm <- mean(logisticR.pred != testing$mpg01)
+error_glm
+```
+```{r}
+training.X <- cbind(training$cylinders, training$displacement, training$horsepower, training$weight)
+testing.X <- cbind(testing$cylinders, testing$displacement, testing$horsepower, testing$weight)
+
+knn.pred <- knn(training.X, testing.X, training$mpg01, k = 3)
+
+table(knn.pred, testing$mpg01)
+error_knn <- mean(knn.pred != testing$mpg01)
+error_knn
+```
+                    
+                    
+                       
+
